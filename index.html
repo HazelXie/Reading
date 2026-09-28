@@ -315,10 +315,14 @@ initCloudFavs();
 const TTS = ('speechSynthesis' in window);
 const P = {story:null,i:0,playing:false,token:0,utt:null,voice:null,voices:[]};
 // Voice tiers: 3 = neural (Edge "Natural", Apple "Premium"), 2 = Apple "Enhanced", 1 = decent, 0 = robotic
+// Safari/iPad name Apple voices just "Ava" etc. -- the quality only shows in voiceURI
+// (com.apple.voice.premium.en-US.Ava / .enhanced. / .compact.), so check both.
+function voiceId(v){ return v.name+' '+(v.voiceURI||''); }
 function voiceTier(v){
-  const n=v.name;
+  const n=voiceId(v);
   if(/\(Natural\)|Neural|Online|Premium/i.test(n)) return 3;
   if(/Enhanced/i.test(n)) return 2;
+  if(/Compact/i.test(n)) return 0;
   if(/Samantha|Ava|Allison|Susan|Zoe|Serena|Google US English|Google UK English Female/i.test(n)) return 1;
   return 0;
 }
@@ -327,22 +331,24 @@ function rankVoice(v){
   let s=voiceTier(v)*10;
   if(/^en[-_]US/i.test(v.lang)) s+=3; else if(/^en[-_](GB|AU|CA|IE)/i.test(v.lang)) s+=1;
   // warm storyteller voices get a small nudge within their tier
-  if(/Ava|Emma|Jenny|Aria|Andrew|Brian|Samantha|Zoe|Libby|Sonia|Natasha/i.test(v.name)) s+=2;
-  if(/Compact|eSpeak/i.test(v.name)) s-=8;
+  if(/Ava|Emma|Jenny|Aria|Andrew|Brian|Zoe|Libby|Sonia|Natasha/i.test(v.name)) s+=2;
+  if(/Compact|eSpeak/i.test(voiceId(v))) s-=8;
   if(/Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Deranged|Good News|Hysterical|Organ|Ralph|Trinoids|Whisper|Zarvox|Fred|Superstar|Wobble|Jester|Junior|Grandma|Grandpa|Rocko|Shelley|Sandy|Eddy|Flo|Reed/i.test(v.name)) s-=50;
   return s;
 }
 function voiceLabel(v){
   let n=v.name.replace(/^Microsoft\s+/,'').replace(/\s*Online\s*\(Natural\)/i,'').replace(/\s*-\s*English.*$/i,'').replace(/^Google\s+/,'Google ');
   const reg=(v.lang.split(/[-_]/)[1]||'').toUpperCase();
-  return (isNice(v)?'✨ ':'')+n+(reg&&!n.includes(reg)?' ('+reg+')':'');
+  const q=/premium/i.test(v.voiceURI||'')&&!/premium/i.test(n)?' (Premium)':/enhanced/i.test(v.voiceURI||'')&&!/enhanced/i.test(n)?' (Enhanced)':'';
+  return (isNice(v)?'✨ ':'')+n+q+(reg&&!n.includes(reg)?' ('+reg+')':'');
 }
 function loadVoices(){
   if(!TTS) return;
   const vs=(speechSynthesis.getVoices()||[]).filter(v=>/^en/i.test(v.lang));
   vs.sort((a,b)=>rankVoice(b)-rankVoice(a));
   P.voices=vs;
-  P.voice = vs.find(v=>v.voiceURI===state.prefs.voice) || vs[0] || null;
+  const saved = vs.find(v=>v.voiceURI===state.prefs.voice);
+  P.voice = (saved && voiceTier(saved)>=voiceTier(vs[0]||saved)) ? saved : (vs[0] || null);
   const sel=$('#voiceSel'); if(sel) fillVoices(sel);
   showVoiceTip();
 }
