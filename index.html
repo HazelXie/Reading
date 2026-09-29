@@ -133,8 +133,6 @@ h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
 .prefs{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:.88rem;color:var(--muted)}
 .prefs label{display:inline-flex;align-items:center;gap:6px}
 .prefs select{background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:4px 6px;max-width:190px}
-.vtip{margin-top:8px;font-size:.84rem;line-height:1.45;color:var(--muted);background:var(--bg);border:1.5px dashed var(--line);border-radius:10px;padding:8px 10px}
-.vtip[hidden]{display:none}
 .prefs .mini{border:1.5px solid var(--line);background:var(--bg);border-radius:8px;padding:3px 10px;cursor:pointer;font-weight:700}
 .wcard{position:fixed;left:16px;right:16px;bottom:calc(150px + env(safe-area-inset-bottom,0px));max-width:520px;margin:0 auto;background:var(--surface);border:2px solid var(--c);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);z-index:30;display:grid;gap:8px}
 .wcard h3{font-size:1.4rem;color:var(--c)}
@@ -350,20 +348,9 @@ function loadVoices(){
   const saved = vs.find(v=>v.voiceURI===state.prefs.voice);
   P.voice = (saved && voiceTier(saved)>=voiceTier(vs[0]||saved)) ? saved : (vs[0] || null);
   const sel=$('#voiceSel'); if(sel) fillVoices(sel);
-  showVoiceTip();
 }
 function fillVoices(sel){
   sel.innerHTML=P.voices.map(v=>'<option value="'+esc(v.voiceURI)+'"'+(P.voice&&P.voice.voiceURI===v.voiceURI?' selected':'')+'>'+esc(voiceLabel(v))+'</option>').join('') || '<option>Default voice</option>';
-}
-function showVoiceTip(){
-  const tip=$('#voiceTip'); if(!tip) return;
-  const hasNice=P.voices.some(isNice);
-  if(hasNice){ tip.hidden=true; return; }
-  const ua=navigator.userAgent, apple=/Mac|iPhone|iPad/.test(ua);
-  tip.hidden=false;
-  tip.innerHTML = apple
-    ? '💡 Want a more natural voice? Download one on this device: <b>Settings → Accessibility → Spoken Content → Voices → English</b> (Mac: <b>System Settings → Accessibility → Spoken Content → System voice → Manage Voices</b>), pick <b>Ava (Premium)</b> or <b>Zoe (Premium)</b>, wait for the download to finish, then tap ↻ next to Voice above (or reload this page). Still missing? Fully quit the browser (not just close the tab) and reopen it — some browsers only pick up new system voices when they start. Or open Story Cove in <b>Microsoft Edge</b>, which has free built-in natural voices.'
-    : '💡 Want a more natural voice? Open Story Cove in <b>Microsoft Edge</b> — it has free, human-sounding “Natural” voices like Ava and Emma.';
 }
 if(TTS){
   loadVoices(); speechSynthesis.onvoiceschanged=loadVoices;
@@ -504,7 +491,7 @@ function playerHTML(){
    '<div class="prefs"><label>Speed <select id="rateSel">'+[0.7,0.8,0.9,1,1.1,1.25].map(r=>'<option value="'+r+'"'+(r===state.prefs.rate?' selected':'')+'>'+r+'x</option>').join('')+'</select></label>'+
    '<label>Voice <select id="voiceSel"></select> <button class="mini" id="voiceRefresh" type="button" title="Refresh voice list" aria-label="Refresh voice list">↻</button></label>'+
    '<label><input type="checkbox" id="followChk"'+(state.prefs.follow?' checked':'')+'> Auto-scroll</label>'+
-   '<span>Text <button class="mini" id="fsMinus" aria-label="Smaller text">A-</button> <button class="mini" id="fsPlus" aria-label="Larger text">A+</button></span></div><div id="voiceTip" class="vtip" hidden></div></div></div>';
+   '<span>Text <button class="mini" id="fsMinus" aria-label="Smaller text">A-</button> <button class="mini" id="fsPlus" aria-label="Larger text">A+</button></span></div></div></div>';
 }
 function bindStory(st){
   const text=$('#text');
@@ -523,7 +510,6 @@ function bindStory(st){
     $('#followChk').onchange=e=>{ state.prefs.follow=e.target.checked; saveState(); };
     const setFs=d=>{ state.prefs.fs=Math.max(1,Math.min(2,+(state.prefs.fs+d).toFixed(2))); document.documentElement.style.setProperty('--fs',state.prefs.fs+'rem'); saveState(); };
     $('#fsMinus').onclick=()=>setFs(-0.12); $('#fsPlus').onclick=()=>setFs(0.12);
-    showVoiceTip();
   }
   // quiz
   let answered=0, score=0;
